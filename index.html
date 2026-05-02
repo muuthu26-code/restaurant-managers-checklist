@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0f766e">
+    
+    <title>Managers Opening Checklist Audit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            background-color: #f8fafc;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @media print {
+            body { background-color: white !important; color: black !important; font-size: 10px !important; line-height: 1.2 !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .print-border { border: 1px solid #e5e7eb !important; padding: 10px !important; margin-bottom: 10px !important; border-radius: 4px !important; }
+            .status-btn { display: none !important; }
+            .audit-card { border: 1px solid #e5e7eb !important; page-break-inside: avoid; break-inside: avoid; margin-bottom: 8px !important; box-shadow: none !important; }
+            .selected-compliant::after { content: " [YES]"; font-weight: bold; }
+            .selected-non-compliant::after { content: " [NO]"; font-weight: bold; color: red; }
+            .selected-na::after { content: " [N/A]"; font-style: italic; }
+            textarea { border: none !important; resize: none !important; }
+            img { max-width: 100%; height: auto !important; max-height: 200px !important; display: block; margin-top: 10px; break-inside: avoid; page-break-inside: avoid; border-radius: 4px; }
+        }
+
+        .selected-compliant { background-color: #14b8a6 !important; color: white !important; border-color: #0d9488 !important; box-shadow: 0 4px 6px -1px rgba(20, 184, 166, 0.2); }
+        .selected-non-compliant { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2); }
+        .selected-na { background-color: #64748b !important; color: white !important; border-color: #475569 !important; }
+        
+        .sticky-header { position: sticky; top: 0; z-index: 40; backdrop-filter: blur(8px); background-color: rgba(15, 118, 110, 0.95); }
+        .progress-container { height: 6px; background-color: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; }
+        .progress-bar { height: 100%; background-color: #2dd4bf; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Header Section -->
+    <header class="sticky-header no-print text-white px-4 py-3 shadow-lg">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-3">
+                <div>
+                    <h1 class="text-lg font-black tracking-tight uppercase leading-tight">Managers Opening</h1>
+                    <p class="text-[10px] font-bold opacity-80 tracking-[0.2em] uppercase flex items-center">
+                        Hospitality Operational Excellence Audit 
+                        <span id="save-indicator" class="ml-2 text-teal-200 hidden bg-teal-800/50 px-2 py-0.5 rounded-full tracking-wider transition-opacity"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Saved</span>
+                    </p>
+                </div>
+                <div class="text-right flex flex-col items-end">
+                    <div id="score-text" class="text-2xl font-black italic text-teal-300">0 / 0 PTS</div>
+                    <div id="progress-text" class="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">PROGRESS: 0%</div>
+                </div>
+            </div>
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 pb-32">
+        
+        <!-- Metadata Form -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 print-border">
+            <div class="space-y-1 col-span-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</label>
+                <input type="date" id="audit-date" onchange="app.saveState()" class="w-full bg-slate-50 border-none rounded-xl p-3 font-bold text-sm focus:ring-2 focus:ring-teal-500 transition-all">
+            </div>
+            <div class="space-y-1 col-span-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Start Time</label>
+                <input type="time" id="audit-time" onchange="app.saveState()" class="w-full bg-slate-50 border-none rounded-xl p-3 font-bold text-sm focus:ring-2 focus:ring-teal-500 transition-all">
+            </div>
+            <div class="space-y-1 col-span-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">End Time</label>
+                <input type="time" id="audit-end-time" onchange="app.saveState()" class="w-full bg-slate-50 border-none rounded-xl p-3 font-bold text-sm focus:ring-2 focus:ring-teal-500 transition-all">
+            </div>
+            <div class="space-y-1 col-span-2 md:col-span-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Manager Name</label>
+                <input type="text" id="manager-name" oninput="app.saveState()" placeholder="Enter name" class="w-full bg-slate-50 border-none rounded-xl p-3 font-bold text-sm focus:ring-2 focus:ring-teal-500 transition-all">
+            </div>
+        </div>
+
+        <!-- Audit Questions Container -->
+        <div id="audit-content" class="space-y-8">
+            <!-- Questions injected via JS -->
+        </div>
+
+        <!-- Auditors' Observations Section -->
+        <div class="mt-8 mb-8">
+            <div class="flex items-center gap-3 mb-4 px-2">
+                <div class="h-px bg-slate-200 flex-1"></div>
+                <h3 class="text-xs font-black text-slate-400 tracking-[0.2em] uppercase">Auditors' Observations</h3>
+                <div class="h-px bg-slate-200 flex-1"></div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 transition-all print-border">
+                <textarea 
+                    id="auditors-observations" 
+                    oninput="app.saveState()"
+                    placeholder="Enter comprehensive observations, summary, or additional notes here..." 
+                    class="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm text-slate-700 focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all h-40 resize-y placeholder:text-slate-300 leading-relaxed"
+                ></textarea>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="mt-12 bg-slate-900 text-white rounded-3xl p-8 shadow-2xl print:bg-white print:text-slate-900 print:shadow-none print:p-0 print:mt-8 print:border-none">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="text-center md:text-left w-full md:w-auto">
+                    <h2 class="text-2xl font-black italic mb-2 no-print">Audit Summary</h2>
+                    <p class="text-slate-400 text-sm font-medium no-print">Verify all fields before exporting the report.</p>
+                    <div class="mt-4 p-5 bg-slate-800 rounded-2xl print:bg-slate-50 print:border print:border-slate-200 print:p-6 text-center md:text-left border border-slate-700">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 print:text-slate-500">Final Score</p>
+                        <div class="flex items-baseline justify-center md:justify-start gap-2">
+                            <span class="text-4xl font-black text-teal-400 print:text-teal-600" id="summary-score-text">0 / 0 PTS</span>
+                            <span class="text-xl font-bold text-slate-300 print:text-slate-500" id="summary-score-percent">(0%)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-3 w-full md:w-auto no-print">
+                    <button onclick="window.print()" class="flex-1 md:flex-none bg-teal-500 hover:bg-teal-400 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-teal-900/20 active:scale-95">
+                        <i class="fa-solid fa-print mr-2"></i> PRINT REPORT
+                    </button>
+                    <button onclick="app.resetAudit()" class="p-4 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-2xl transition-all active:scale-95">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signature Section for Print -->
+        <div class="hidden print-only mt-12 grid grid-cols-2 gap-12">
+            <div class="border-t-2 border-slate-900 pt-4">
+                <p class="text-xs font-black uppercase">Manager Signature</p>
+                <div class="h-12"></div>
+            </div>
+            <div class="border-t-2 border-slate-900 pt-4 text-right">
+                <p class="text-xs font-black uppercase">Auditor Signature</p>
+                <div class="h-12"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Photo Modal -->
+    <div id="photo-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 no-print opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="photo-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-black text-lg">Add Evidence</h3>
+                <button onclick="app.closePhotoModal()" class="text-slate-400 hover:text-slate-700 bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            <div class="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group">
+                <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-300 group-hover:text-teal-500 mb-3 transition-colors"></i>
+                <p class="text-sm font-bold text-slate-600">Tap to upload photo</p>
+                <p class="text-xs text-slate-400 mt-1">JPEG, PNG, HEIC</p>
+                <input type="file" accept="image/*" capture="environment" class="hidden" id="camera-input">
+            </div>
+            <button onclick="app.closePhotoModal()" class="w-full mt-4 bg-slate-900 text-white font-black py-4 rounded-xl hover:bg-slate-800 transition-colors">
+                Done
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const auditData = [
+            {
+                category: "SPRING",
+                items: [
+                    { id: 1, text: "Spring store arranged to SOP standards and cleared of all cardboard boxes." },
+                    { id: 2, text: "Back area cleanliness: Crockery, cutlery, and glassware properly polished and wiped down." },
+                    { id: 3, text: "Previous-day linen cleared; trolley kept free of food debris." },
+                    { id: 4, text: "À la carte station check: Clean bread baskets, fresh cloths, and organized crockery." },
+                    { id: 5, text: "Tea/Coffee counter: Consumables (milk/beans) filled and cups neatly arranged." },
+                    { id: 6, text: "Call buttons: Verify presence on all tables and perform random connectivity checks." },
+                    { id: 7, text: "Calling watches: Verify battery levels and staff compliance (being worn by station holders)." },
+                    { id: 8, text: "General Cleanliness: Floors debris-free, upholstery pristine, and marble tables/buffet polished." },
+                    { id: 9, text: "51 Series Booths: Check seating crevices for food debris or stray cutlery." },
+                    { id: 10, text: "Mise en Scène: Table alignment, side station organization, and environmental ambiance." },
+                    { id: 11, text: "Hostess Desk: Q-pagers available and current in-house guest list printed." },
+                    { id: 12, text: "Digital Signboard (Entrance): Switched on with correct active signage." },
+                    { id: 13, text: "Guest Recognition: Hostess team updated on HWC and VIP arrivals." },
+                    { id: 14, text: "Live Counter Readiness: Signage displayed, order book present, Chef and server on-site." },
+                    { id: 15, text: "Coffee/Tea Trolley: Cleanliness, mise en place set, and minimum 8 carafes available." },
+                    { id: 16, text: "Patio Side Station: Clean, free of previous-day clutter, and set for operations." },
+                    { id: 17, text: "Lawn Area: Tables 91-93 ready; area clean; standing ashtrays emptied and bud-free." },
+                    { id: 18, text: "Pool Deck: All used service-ware (glassware, crockery) removed." },
+                    { id: 19, text: "POS Terminals: Switched on, logged in, and receipt paper stocked." },
+                    { id: 20, text: "Night Shift Handover: Midnight orders and packed breakfasts fulfilled in a timely manner." }
+                ]
+            },
+            {
+                category: "GROOMING",
+                items: [
+                    { id: 21, text: "Staff Grooming: Conduct line-up to verify uniform standards, polished shoes, and name tags." }
+                ]
+            },
+            {
+                category: "MAINTENANCE",
+                items: [
+                    { id: 22, text: "Wobbly Tables: Perform \"touch-test\" to ensure stability of all dining tables." },
+                    { id: 23, text: "Lighting Sweep: Check for and replace any fused or flickering bulbs." },
+                    { id: 24, text: "Ambiance: Verify lighting levels and background music volume/genre." },
+                    { id: 25, text: "Charging Station: Ensure Tabs, EDC machines, and shift mobiles are fully charged." },
+                    { id: 26, text: "Refrigeration Logs: D-bar, Spring, and IRD temperatures recorded." }
+                ]
+            },
+            {
+                category: "IRD",
+                items: [
+                    { id: 27, text: "IRD Readiness: Mise en place set, tray mats clean, and fresh trolley cloths applied." },
+                    { id: 28, text: "Labelling Compliance: \"Use By\" labels accurate for D-Bar and IRD stock." }
+                ]
+            },
+            {
+                category: "FSSAI / FOOD SAFETY",
+                items: [
+                    { id: 29, text: "Buffet Labels: Check for spelling errors and correct calorific values." },
+                    { id: 30, text: "Allergen Signage: Prominently positioned and visible to all guests." },
+                    { id: 31, text: "Buffet Temps: Ensure hot food > 65°C and cold food < 5°C; log accordingly." }
+                ]
+            }
+        ];
+
+        // Global State
+        const state = {
+            responses: {} // Stores status, remarks, photo by item ID
+        };
+
+        const app = {
+            init: function() {
+                // Try to load saved state first
+                if (!this.loadState()) {
+                    // If no saved state, Set default date and time
+                    const now = new Date();
+                    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+                    const isoString = localDate.toISOString();
+                    
+                    document.getElementById('audit-date').value = isoString.split('T')[0];
+                    document.getElementById('audit-time').value = isoString.split('T')[1].slice(0, 5);
+
+                    // Initialize empty state
+                    auditData.forEach(category => {
+                        category.items.forEach(item => {
+                            state.responses[item.id] = { status: null, remarks: '', hasPhoto: false, photoData: null };
+                        });
+                    });
+                }
+
+                this.renderAudit();
+                this.updateProgress();
+
+                // Setup photo upload listener with compression
+                document.getElementById('camera-input').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if(file) {
+                        this.closePhotoModal();
+                        
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                // Compress image using canvas for optimal PDF size (under 10MB)
+                                const canvas = document.createElement('canvas');
+                                const MAX_WIDTH = 800; // Print quality width
+                                let scaleSize = 1;
+                                
+                                if (img.width > MAX_WIDTH) {
+                                    scaleSize = MAX_WIDTH / img.width;
+                                }
+                                
+                                canvas.width = img.width * scaleSize;
+                                canvas.height = img.height * scaleSize;
+                                
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                
+                                // Convert to JPEG with 70% quality for crispness vs size balance
+                                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                
+                                // Save to state
+                                state.responses[this.currentPhotoId].hasPhoto = true;
+                                state.responses[this.currentPhotoId].photoData = compressedDataUrl;
+                                
+                                // Update UI
+                                this.updatePhotoUI(this.currentPhotoId);
+                            };
+                            img.src = event.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            },
+
+            renderAudit: function() {
+                const container = document.getElementById('audit-content');
+                let html = '';
+
+                auditData.forEach(category => {
+                    html += `
+                        <div class="mb-8">
+                            <div class="flex items-center gap-3 mb-4 px-2">
+                                <div class="h-px bg-slate-200 flex-1"></div>
+                                <h3 class="text-xs font-black text-slate-400 tracking-[0.2em] uppercase">${category.category}</h3>
+                                <div class="h-px bg-slate-200 flex-1"></div>
+                            </div>
+                    `;
+
+                    category.items.forEach(item => {
+                        const r = state.responses[item.id];
+                        
+                        // Recreate photo HTML from saved state
+                        let photoPreviewHtml = '';
+                        if (r && r.hasPhoto && r.photoData) {
+                            photoPreviewHtml = `
+                                <div class="mt-4 border-t border-slate-100 pt-4">
+                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 no-print">Evidence Photo</p>
+                                    <img src="${r.photoData}" class="max-h-48 rounded-lg border border-slate-200 object-contain print:max-h-64" alt="Audit Evidence" />
+                                    <button onclick="app.removePhoto(${item.id})" class="no-print mt-2 text-[10px] text-red-500 font-bold hover:text-red-700 transition-colors uppercase tracking-wider">
+                                        <i class="fa-solid fa-trash mr-1"></i> Remove Photo
+                                    </button>
+                                </div>
+                            `;
+                        }
+
+                        // Recreate correct borders and print status text from saved state
+                        const cardBorderClass = (r && r.status === 'no') ? 'border-red-200 bg-red-50/30' : 'border-slate-100';
+                        const printStatusText = (r && r.status) ? r.status.toUpperCase() : 'Not Checked';
+                        const printStatusColor = (r && r.status === 'no') ? 'color: red;' : '';
+
+                        html += `
+                            <div class="audit-card bg-white rounded-2xl p-5 shadow-sm border ${cardBorderClass} mb-4 transition-all" id="card-${item.id}">
+                                <div class="flex flex-col lg:flex-row gap-5">
+                                    
+                                    <div class="flex-1">
+                                        <div class="flex gap-3 items-start mb-3">
+                                            <span class="bg-teal-50 text-teal-700 font-black text-xs py-1 px-2 rounded-md">${item.id}</span>
+                                            <p class="text-sm font-semibold leading-relaxed text-slate-700">${item.text}</p>
+                                        </div>
+                                        
+                                        <textarea 
+                                            placeholder="Add specific remarks, corrective actions, or observations..." 
+                                            onchange="app.updateRemarks(${item.id}, this.value)"
+                                            class="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs text-slate-600 focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all h-20 placeholder:text-slate-300"
+                                        >${r ? r.remarks : ''}</textarea>
+                                    </div>
+                                    
+                                    <div class="flex flex-col gap-2 w-full lg:w-48 shrink-0">
+                                        <div class="flex gap-2">
+                                            <button id="btn-${item.id}-yes" onclick="app.updateStatus(${item.id}, 'yes')" class="status-btn flex-1 py-3 lg:py-2 border border-slate-100 rounded-lg text-[10px] font-black transition-all ${r && r.status === 'yes' ? 'selected-compliant' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}">YES</button>
+                                            <button id="btn-${item.id}-no" onclick="app.updateStatus(${item.id}, 'no')" class="status-btn flex-1 py-3 lg:py-2 border border-slate-100 rounded-lg text-[10px] font-black transition-all ${r && r.status === 'no' ? 'selected-non-compliant' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}">NO</button>
+                                            <button id="btn-${item.id}-na" onclick="app.updateStatus(${item.id}, 'na')" class="status-btn flex-1 py-3 lg:py-2 border border-slate-100 rounded-lg text-[10px] font-black transition-all ${r && r.status === 'na' ? 'selected-na' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}">N/A</button>
+                                        </div>
+                                        <button data-photo-btn="${item.id}" onclick="app.triggerPhotoUpload(${item.id})" class="no-print text-[10px] font-black py-3 lg:py-2 rounded-lg border transition-all uppercase tracking-tighter w-full ${r && r.hasPhoto ? 'bg-teal-100 text-teal-700 border-teal-200' : 'bg-slate-50 hover:bg-teal-50 text-slate-500 hover:text-teal-600 border-slate-100'}">
+                                            <i class="fa-solid ${r && r.hasPhoto ? 'fa-check-circle' : 'fa-camera'} mr-1"></i> ${r && r.hasPhoto ? 'Evidence Attached' : 'Add Evidence'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="photo-preview-container-${item.id}" class="w-full">${photoPreviewHtml}</div>
+                                <div class="hidden print-only text-[10px] font-black text-slate-500 mt-2">
+                                    Status: <span id="print-status-${item.id}" style="${printStatusColor}">${printStatusText}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                });
+
+                container.innerHTML = html;
+            },
+
+            updateStatus: function(id, status) {
+                if (!state.responses[id]) {
+                    state.responses[id] = { status: null, remarks: '', hasPhoto: false, photoData: null };
+                }
+                state.responses[id].status = status;
+                
+                // Update UI Buttons
+                ['yes', 'no', 'na'].forEach(s => {
+                    const btn = document.getElementById(`btn-${id}-${s}`);
+                    btn.className = `status-btn flex-1 py-3 lg:py-2 border border-slate-100 rounded-lg text-[10px] font-black transition-all bg-slate-50 text-slate-400 hover:bg-slate-100`;
+                });
+
+                const activeBtn = document.getElementById(`btn-${id}-${status}`);
+                if (status === 'yes') activeBtn.className = "status-btn flex-1 py-3 lg:py-2 border border-slate-100 rounded-lg text-[10px] font-black transition-all selected-compliant";
+                if (status === 'no') activeBtn.className = "status-btn flex-1 py-3 lg:py-2 border border-slate-100 rounded-lg text-[10px] font-black transition-all selected-non-compliant";
+                if (status === 'na') activeBtn.className = "status-btn flex-1 py-3 lg:py-2 border border-slate-100 rounded-lg text-[10px] font-black transition-all selected-na";
+
+                // Update Print Text
+                const printStatus = document.getElementById(`print-status-${id}`);
+                if(printStatus) {
+                    printStatus.textContent = status.toUpperCase();
+                    printStatus.style.color = status === 'no' ? 'red' : 'inherit';
+                }
+
+                // Visual feedback for card
+                const card = document.getElementById(`card-${id}`);
+                if(status === 'no') {
+                    card.classList.add('border-red-200', 'bg-red-50/30');
+                } else {
+                    card.classList.remove('border-red-200', 'bg-red-50/30');
+                }
+
+                this.updateProgress();
+                this.saveState();
+            },
+
+            updatePhotoUI: function(id) {
+                const btn = document.querySelector(`[data-photo-btn="${id}"]`);
+                if(btn) {
+                    btn.classList.remove('text-slate-500', 'bg-slate-50', 'hover:bg-teal-50');
+                    btn.classList.add('bg-teal-100', 'text-teal-700', 'border-teal-200');
+                    btn.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i> Evidence Attached`;
+                }
+                
+                // Add image preview to the card
+                const imgContainer = document.getElementById(`photo-preview-container-${id}`);
+                if(imgContainer && state.responses[id] && state.responses[id].photoData) {
+                    imgContainer.innerHTML = `
+                        <div class="mt-4 border-t border-slate-100 pt-4">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 no-print">Evidence Photo</p>
+                            <img src="${state.responses[id].photoData}" class="max-h-48 rounded-lg border border-slate-200 object-contain print:max-h-64" alt="Audit Evidence" />
+                            <button onclick="app.removePhoto(${id})" class="no-print mt-2 text-[10px] text-red-500 font-bold hover:text-red-700 transition-colors uppercase tracking-wider">
+                                <i class="fa-solid fa-trash mr-1"></i> Remove Photo
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                this.saveState();
+            },
+
+            removePhoto: function(id) {
+                if(state.responses[id]) {
+                    state.responses[id].hasPhoto = false;
+                    state.responses[id].photoData = null;
+                }
+                
+                const container = document.getElementById(`photo-preview-container-${id}`);
+                if(container) container.innerHTML = '';
+                
+                const btn = document.querySelector(`[data-photo-btn="${id}"]`);
+                if(btn) {
+                    btn.className = `no-print text-[10px] font-black py-3 lg:py-2 rounded-lg border transition-all uppercase tracking-tighter w-full bg-slate-50 hover:bg-teal-50 text-slate-500 hover:text-teal-600 border-slate-100`;
+                    btn.innerHTML = `<i class="fa-solid fa-camera mr-1"></i> Add Evidence`;
+                }
+                document.getElementById('camera-input').value = ''; 
+                this.saveState();
+            },
+
+            updateRemarks: function(id, val) {
+                if (!state.responses[id]) {
+                    state.responses[id] = { status: null, remarks: '', hasPhoto: false, photoData: null };
+                }
+                state.responses[id].remarks = val;
+                this.saveState();
+            },
+
+            updateProgress: function() {
+                const totalItems = auditData.reduce((acc, cat) => acc + cat.items.length, 0);
+                const answers = Object.values(state.responses).filter(r => r && r.status !== null);
+                const answeredCount = answers.length;
+                
+                // Calculate basic completion progress %
+                const progressPercentage = totalItems === 0 ? 0 : Math.round((answeredCount / totalItems) * 100);
+                
+                // Calculate Points (2 points for Yes, 0 for No, N/A removes item from maximum pool)
+                let earnedPoints = 0;
+                let applicableItems = totalItems;
+
+                answers.forEach(ans => {
+                    if (ans.status === 'yes') {
+                        earnedPoints += 2;
+                    }
+                    if (ans.status === 'na') {
+                        applicableItems -= 1; // Reduces the denominator
+                    }
+                });
+
+                const maxPoints = applicableItems * 2;
+                const scorePercentage = maxPoints === 0 ? 0 : Math.round((earnedPoints / maxPoints) * 100);
+                
+                // Update DOM elements
+                document.getElementById('progress-bar').style.width = `${progressPercentage}%`;
+                
+                const progressTextEl = document.getElementById('progress-text');
+                if(progressTextEl) progressTextEl.innerText = `PROGRESS: ${progressPercentage}%`;
+                
+                const scoreTextEl = document.getElementById('score-text');
+                if(scoreTextEl) scoreTextEl.innerText = `${earnedPoints} / ${maxPoints} PTS`;
+
+                const summaryScoreText = document.getElementById('summary-score-text');
+                if(summaryScoreText) summaryScoreText.innerText = `${earnedPoints} / ${maxPoints} PTS`;
+
+                const summaryScorePercent = document.getElementById('summary-score-percent');
+                if(summaryScorePercent) summaryScorePercent.innerText = `(${scorePercentage}%)`;
+            },
+
+            triggerPhotoUpload: function(id) {
+                this.currentPhotoId = id;
+                const modal = document.getElementById('photo-modal');
+                const content = document.getElementById('photo-modal-content');
+                
+                modal.classList.remove('hidden');
+                // Small delay for transition
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                }, 10);
+            },
+
+            closePhotoModal: function() {
+                const modal = document.getElementById('photo-modal');
+                const content = document.getElementById('photo-modal-content');
+                
+                modal.classList.add('opacity-0');
+                content.classList.add('scale-95');
+                
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            },
+
+            saveState: function() {
+                try {
+                    const dataToSave = {
+                        responses: state.responses,
+                        metadata: {
+                            date: document.getElementById('audit-date').value,
+                            time: document.getElementById('audit-time').value,
+                            endTime: document.getElementById('audit-end-time').value,
+                            manager: document.getElementById('manager-name').value,
+                            observations: document.getElementById('auditors-observations').value
+                        }
+                    };
+                    localStorage.setItem('mgrOpeningAuditState', JSON.stringify(dataToSave));
+                    
+                    // Show saved indicator
+                    const indicator = document.getElementById('save-indicator');
+                    if(indicator) {
+                        indicator.classList.remove('hidden');
+                        clearTimeout(this.saveTimeout);
+                        this.saveTimeout = setTimeout(() => {
+                            indicator.classList.add('hidden');
+                        }, 2000);
+                    }
+                } catch (e) {
+                    console.warn("Could not save to local storage", e);
+                    if (e.name === 'QuotaExceededError') {
+                        alert("Storage limit reached. Evidence photos take up space. Please export/print the report and reset the audit to continue saving.");
+                    }
+                }
+            },
+
+            loadState: function() {
+                try {
+                    const saved = localStorage.getItem('mgrOpeningAuditState');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        state.responses = parsed.responses || {};
+                        
+                        // Ensure all current IDs exist in responses object to avoid undefined errors during render
+                        auditData.forEach(category => {
+                            category.items.forEach(item => {
+                                if (!state.responses[item.id]) {
+                                    state.responses[item.id] = { status: null, remarks: '', hasPhoto: false, photoData: null };
+                                }
+                            });
+                        });
+
+                        if(parsed.metadata) {
+                            document.getElementById('audit-date').value = parsed.metadata.date || '';
+                            document.getElementById('audit-time').value = parsed.metadata.time || '';
+                            document.getElementById('audit-end-time').value = parsed.metadata.endTime || '';
+                            document.getElementById('manager-name').value = parsed.metadata.manager || '';
+                            if(document.getElementById('auditors-observations')) {
+                                document.getElementById('auditors-observations').value = parsed.metadata.observations || '';
+                            }
+                        }
+                        return true;
+                    }
+                } catch(e) {
+                    console.error("Error loading saved state", e);
+                }
+                return false;
+            },
+
+            resetAudit: function() {
+                if(confirm("Are you sure you want to clear all responses? This cannot be undone.")) {
+                    localStorage.removeItem('mgrOpeningAuditState');
+                    state.responses = {};
+                    document.getElementById('manager-name').value = '';
+                    document.getElementById('audit-end-time').value = '';
+                    if(document.getElementById('auditors-observations')) {
+                        document.getElementById('auditors-observations').value = '';
+                    }
+                    this.init();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+        };
+
+        // Initialize App on load
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+            
+            // Allow triggering file input from the stylized box
+            document.querySelector('.group').addEventListener('click', () => {
+                document.getElementById('camera-input').click();
+            });
+        });
+    </script>
+</body>
+</html>
